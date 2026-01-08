@@ -14,6 +14,7 @@ using Exiled.Events.EventArgs.Player;
 using JetBrains.Annotations;
 using LabApi.Events.Arguments.PlayerEvents;
 using MEC;
+using ProjectMER.Features.Objects;
 using UnityEngine;
 using levents = LabApi.Events.Handlers;
 using events = Exiled.Events.Handlers;
@@ -115,13 +116,22 @@ public class Handler : CustomItem
         {
             var props = ev.Player.CapybaraGunProperties().PlayerProps;
 
+            if (props.IsSchematicBulletType != String.Empty)
+            {
+                if (!ProjectMER.Features.MapUtils.TryGetSchematicDataByName(props.IsSchematicBulletType, out _))
+                    return;
+                
+                SpawnSchematic(ev.Player, ev.Player.CapybaraGunProperties().PlayerProps.IsSchematicBulletType);
+                return;
+            }
+
             if (props.IsTextSpawnerEnabled)
             {
                 SpawnText(ev.Player);
                 return;
             }
             
-            if (props.BulletTypeSpecial > -1)
+            if (props.BulletTypeSpecial > 0)
             {
                 SpawnPrefab(ev.Player, (PrefabType)props.BulletTypeSpecial);
                 return;
@@ -326,8 +336,58 @@ public class Handler : CustomItem
         }
         
         if ((int)capybaraProps.DestroyDelay != 0)
-            Timing.CallDelayed(capybaraProps.DestroyDelay, 
-                () => Object.Destroy(prefabGo));
+            Timing.CallDelayed(capybaraProps.DestroyDelay,
+                () =>
+                {
+                    Object.Destroy(prefabGo);
+                    Object.Destroy(prefabGo.gameObject);
+                });
         else Plugin.PermanentObjects.Add(prefabGo.gameObject);
+    }
+    
+    private void SpawnSchematic(Player player, string schematicName)
+    {
+        if (player == null)
+            return;
+
+        var cam = player.CameraTransform;
+
+        Vector3 spawnPos = (cam.position - new Vector3(0, 0.3f, 0)) + cam.forward * 1;
+        Quaternion rotation = Quaternion.LookRotation(cam.forward);
+
+        var schematicObject = ProjectMER.Features.ObjectSpawner.SpawnSchematic(schematicName, spawnPos, rotation);
+        schematicObject.Scale = player.CapybaraGunProperties().PlayerProps.BulletScale;
+        
+        if (player.CapybaraGunProperties().PlayerProps.IsPhysicsEnabled)
+        {
+            var rb = schematicObject.GetComponent<Rigidbody>();
+
+            if (rb == null)
+            {
+                rb = schematicObject.gameObject.AddComponent<Rigidbody>();
+            }
+            
+            if (!player.CapybaraGunProperties().PlayerProps.IsAntiGravityEnabled)
+                rb.useGravity = true;
+            else 
+                rb.useGravity = false;
+            
+            rb.isKinematic = false;
+            rb.mass = 1f;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
+            rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+
+            float force = player.CapybaraGunProperties().PlayerProps.BulletForce;
+            rb.AddForce(cam.forward * force, ForceMode.Impulse);
+
+            Vector3 spinAxis = Random.onUnitSphere;
+            float spinStrength = player.CapybaraGunProperties().PlayerProps.AngularSpinVelocity;
+            rb.angularVelocity = spinAxis * spinStrength;
+        }
+        
+        if ((int)player.CapybaraGunProperties().PlayerProps.DestroyDelay != 0)
+            Timing.CallDelayed(player.CapybaraGunProperties().PlayerProps.DestroyDelay, 
+                () => schematicObject.Destroy());
+        else Plugin.PermanentObjects.Add(schematicObject.gameObject);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using CapybaraGun.Features.Components.Interfaces;
+using JetBrains.Annotations;
 using UnityEngine;
 using Utf8Json.Internal.DoubleConversion;
 
@@ -20,4 +21,5 @@ public class PlayerProps(CapybaraGunProperties capybaraGunProperties) : IPropert
     public float DestroyDelay { get; set; } = 10f;
     public bool IsSymbolsRandomazerEnabled { get; set; } = false;
     public bool IsSymbolsColorRandomazerEnabled { get; set; } = false;
+    public string IsSchematicBulletType { get; set; } = String.Empty;
 }

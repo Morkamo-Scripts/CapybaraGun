@@ -18,7 +18,7 @@ namespace CapybaraGun
         public override string Prefix => Name;
         public override string Author => "Morkamo";
         public override Version RequiredExiledVersion => new(9, 12, 1);
-        public override Version Version => new(1, 0, 0);
+        public override Version Version => new(2, 0, 0);
 
         public static Plugin Instance;
         public static List<GameObject> PermanentObjects { get; set; } = new();

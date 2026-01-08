@@ -1,7 +1,6 @@
 ﻿using System;
 using CapybaraGun.Extensions;
 using CommandSystem;
-using Exiled.API.Enums;
 using Exiled.API.Extensions;
 using Exiled.API.Features;
 using Exiled.API.Features.Items;
@@ -13,17 +12,17 @@ namespace CapybaraGun.Commands;
 
 [CommandHandler(typeof(ClientCommandHandler))]
 [CommandHandler(typeof(RemoteAdminCommandHandler))]
-public class BulletDestroyDelayCommand : ICommand
+public class SchematicBulletModeCommand : ICommand
 {
-    public string Command { get; } = "cgtdd";
+    public string Command { get; } = "cgtsbm";
     public string[] Aliases { get; } = [];
-    public string Description { get; } = "Задаёт время задержки перед удалением снаряда для CapybaraGun (по умолчанию 10)";
+    public string Description { get; } = "Выбирает Schematic в качестве снаряда для CapybaraGun (Если строка пустая то выкл)";
     
     public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
     {
-        if (sender is not PlayerCommandSender || !sender.CheckPermission("ac.ctgforce"))
+        if (sender is not PlayerCommandSender || !sender.CheckPermission("ac.cgtsbm"))
         {
-            string requestPermission = "Требуется разрешение - 'ac.ctgforce'";
+            string requestPermission = "Требуется разрешение - 'ac.cgtsbm'";
             
             if (InstanceConfig().Debug)
                 response = $"<color=red>Вы не имеете права использовать данную команду!</color>\n" +
@@ -33,20 +32,12 @@ public class BulletDestroyDelayCommand : ICommand
             
             return false;
         }
-
-        if (!float.TryParse(arguments.At(0), out var delayInSeconds))
-        {
-            response = "<color=red>Некорректное значение времени (введите кол-во секунд)!</color>";
-            return false;
-        }
-
-        if (delayInSeconds < 0 || delayInSeconds > 120)
-        {
-            delayInSeconds = Mathf.Clamp(delayInSeconds, 0f, 120f);
-        }
         
-        sender.AsPlayer().CapybaraGunProperties().PlayerProps.DestroyDelay = delayInSeconds;
-        response = $"<color=green>Успешно установлено значение {delayInSeconds:F1}!</color>";
+        if (arguments.Count < 1)
+            sender.AsPlayer().CapybaraGunProperties().PlayerProps.IsSchematicBulletType = String.Empty;
+        else
+            sender.AsPlayer().CapybaraGunProperties().PlayerProps.IsSchematicBulletType = arguments.At(0);
+        response = $"<color=green>Успешно!</color>";
         return true;
     }
     
